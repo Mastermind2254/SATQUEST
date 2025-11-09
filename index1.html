@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SATQUEST: Crossword Challenge</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: system-ui, sans-serif;
+      background-color: #f5f7fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #222;
+    }
+    .container {
+      width: 100%;
+      max-width: 450px;
+      margin: 1rem;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    h1, h2, h3 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+    #crossword-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #crossword-grid {
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+    #crossword-grid td {
+      width: 45px;
+      height: 45px;
+      border: 1px solid #444;
+      text-align: center;
+      position: relative;
+    }
+    #crossword-grid input {
+      width: 100%;
+      height: 100%;
+      text-transform: uppercase;
+      text-align: center;
+      border: none;
+      font-weight: 600;
+      font-size: 10px;
+    }
+    #crossword-grid .blank {
+      background-color: #000;
+    }
+    #crossword-grid .clue-number {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      font-size: 10px;
+      font-weight: bold;
+      color: #007bff;
+    }
+    #clues {
+      text-align: left;
+      margin-bottom: 1rem;
+    }
+    #clues ul {
+      margin-left: 1rem;
+    }
+    .result-box {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .coordinate {
+      font-size: 1.2rem;
+      margin-top: 0.5rem;
+      font-family: 'Courier New', monospace;
+      background-color: #fff3cd;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 2px dashed #856404;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>SATQUEST: Crossword Challenge</h2>
+      <p style="text-align:center;margin-bottom:1rem;">Solve the riddles to unlock your coordinate!</p>
+
+      <div id="crossword-container">
+        <table id="crossword-grid"></table>
+      
+        <div id="clues">
+          <h3>Across</h3>
+          <ul id="clues-across"></ul>
+          <h3>Down</h3>
+          <ul id="clues-down"></ul>
+          <div id="clues-up-section" style="display:none;">
+            <h3>Up</h3>
+            <ul id="clues-up"></ul>
+          </div>
+        </div>
+      
+        <button id="check-crossword" class="btn btn-primary">Check Answers</button>
+        <div id="result-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Four different crosswords with their coordinates
+    const crosswordSets = [
+      {
+        coordinate: "22.252569082240043, 84.90434822856787",
+        pattern: [
+          ['#', '#', '#', 'R', '#' ,'#' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', 'E', '#' ,'#' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', 'S', '#' ,'#' ,'#' ,'#' ,'#' ,'#'],
+          ['#', 'S', 'W', 'I', 'T' ,'C' ,'H' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', 'S', '#' ,'#' ,'#' ,'L' ,'E' ,'D'],
+          ['V', 'O', 'L', 'T', 'A' ,'G' ,'E' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', 'O', '#' ,'#' ,'D' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', 'R', '#' ,'#' ,'O' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', '#', '#' ,'#' ,'I' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', '#', '#' ,'#' ,'D' ,'#' ,'#' ,'#'],
+        ],
+        clueNumbers: [
+          [0, 3, '1'],
+          [3, 1, '2'],
+          [4, 7, '3'],
+          [5, 0, '4'],
+          [9, 6, '5']
+        ],
+        clues: {
+          across: [
+            { num: '2', clue: 'I have a mouth but never speak, a bed but never sleep. I wear no clothes but have a case & though I\'m small, I light the place. what am I ?' },
+            { num: '3', clue: 'I am a modern marvel, efficient and small I use no filament, yet I light up your hall. I come in all colours, a tiny, bright Spark, & use for less powers, saving you in the dark .what am I?' },
+            { num: '4', clue: 'I have no mass, but I can make things light. I push & pull with all my might. I power your world from morning till night who am I?' }
+          ],
+          down: [
+            { num: '1', clue: 'I have a job to do though , I never move a muscle. I restrict the flow in a silent static hustle. I heat up the line ,but I don\'t start the fire .' }
+          ],
+          up: [
+            { num: '5', clue: 'I am a tiny electronic one way gate, letting current pass, sealing fate. I prevent backflow,Simple & plain ' }
+          ]
+        }
+      },
+      {
+        coordinate: "22.250712319230335, 84.90151293404345",
+        pattern: [
+          ['#', '#', '#', 'P', '#' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', 'O', 'R' ,'B' ,'I' ,'T' ,'#'],
+          ['#', '#', '#', 'L', '#' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', 'A', '#' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', 'G', 'R', 'A' ,'V' ,'I' ,'T' ,'Y'],
+          ['#', '#', '#', '#', 'L' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', 'W', '#', 'T' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', 'A', '#', 'I' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', 'V', '#', 'T' ,'#' ,'#' ,'#' ,'#'],
+          ['F', 'R', 'E', 'Q', 'U' ,'E' ,'N' ,'C' ,'Y'],
+          ['#', '#', '#', '#', 'D' ,'#' ,'#' ,'#' ,'#'],
+          ['#', '#', '#', '#', 'E' ,'#' ,'#' ,'#' ,'#'],
+        ],
+        clueNumbers: [
+          [0, 3, '1'],
+          [1, 3, '2'],
+          [4, 2, '3'],
+          [6, 2, '4'],
+          [9, 0, '5'],
+          [4, 4, '6']
+        ],
+        clues: {
+          across: [
+            { num: '2', clue: 'Round and round I go in line, Held by pull yet free to shine. I circle one, but many see — What path describes my destiny?' },
+            { num: '3', clue: 'I pull on all, both big and small, Without a touch, I make things fall. Planets dance because of me — What unseen force could I be?' },
+            { num: '5', clue: 'I\'m how often things repeat, In sound or light, I set the beat. High or low, I tune your ear — What\'s my name that you now hear?' }
+          ],
+          down: [
+            { num: '1', clue: 'I describe extremes both north and south, Where cold winds blow from nature\'s mouth. In molecules too, I take my part — With opposite ends and a charged heart. I’m an adjective, not the places you name.' },
+            { num: '4', clue: 'I travel fast but never walk, In me, both sound and light can talk. Up and down or side to side — Name the motion where I glide.' },
+            { num: '6', clue: 'The higher I go, the thinner I feel, My numbers rise, though I stand still. Pilots and climbers keep me in sight — What am I that measures height?' }
+          ],
+          up: []
+        }
+      },
+      {
+        coordinate: "22.250397785515588, 84.90369281216677",
+        pattern: [
+          ['#', '#', '#', '#', '#' ,'#' ,'T' ,'#' ,'S' ,'#' ,'#' ,'#'],
+          ['S', 'A', 'T', 'E', 'L' ,'L' ,'I' ,'T' ,'E' ,'#' ,'#' ,'#'],
+          ['#', 'S', '#', '#', '#' ,'#' ,'M' ,'#' ,'N' ,'#' ,'#' ,'#'],
+          ['#', 'T', '#', '#', '#' ,'#' ,'E' ,'#' ,'S' ,'#' ,'#' ,'#'],
+          ['#', 'R', '#', '#', '#' ,'#' ,'#' ,'S', 'O' ,'U' ,'N' ,'D'],
+          ['#', 'O', '#', '#', 'P' ,'#' ,'#' ,'#' ,'R' ,'#' ,'#' ,'#'],
+          ['I', 'N', 'D', 'U', 'C' ,'T' ,'O' ,'R' ,'#' ,'#' ,'#' ,'#'],
+          ['#', 'O', '#', '#', 'B' ,'#' ,'#' ,'#' ,'#' ,'#' ,'#' ,'#'],
+          ['#', 'M', '#', '#', '#' ,'#' ,'#' ,'#' ,'#' ,'#' ,'#' ,'#'],
+          ['#', 'Y', '#', '#', '#' ,'#' ,'#' ,'#' ,'#' ,'#' ,'#' ,'#'],
+        ],
+        clueNumbers: [
+          [1, 0, '1'],
+          [1, 1, '2'],
+          [0, 6, '3'],
+          [0, 8, '4'],
+          [4, 7, '5'],
+          [6, 0, '6'],
+          [5, 4, '7'],
+        ],
+        clues: {
+          across: [
+            { num: '1', clue: 'I circle high without a sound, Around a world I\'m tightly bound. I send you maps, calls, day and night — Who am I that orbits in flight?' },
+            { num: '5', clue: 'I ride pressure waves and wake your ears, from whispers to alarms and drums. You can measure me, block me, or make me echo.' },
+            { num: '6', clue: 'A coil of wire, round and neat, I store up energy, pure and sweet. When current fades, I fight its fall — Which circuit part resists it all?' }
+          ],
+          down: [
+            { num: '2', clue: 'I watch the stars and cosmic seas, Planets, comets, galaxies. Through telescope or human eye, What field am I that scans the sky?' },
+            { num: '3', clue: 'I move though still, I\'m felt by all, From birth to dusk, I rise and fall. You cannot see me, yet I chime — What endless river am I?' },
+            { num: '4', clue: 'I sense the heat, the sound, the light, I help machines to know what\'s right. I feel the world, but never see — What am I in technology?' },
+            { num: '7', clue: 'A flat green map where paths align, Copper roads for current\'s line. I hold each chip and soldered cord — What am I inside every board?' }
+          ],
+          up: []
+        }
+      }
+    ];
+
+    // Select random crossword
+    const selectedCrossword = crosswordSets[Math.floor(Math.random() * crosswordSets.length)];
+    const crosswordPattern = selectedCrossword.pattern;
+    const clueNumbers = selectedCrossword.clueNumbers;
+  
+    const grid = document.getElementById("crossword-grid");
+    const rows = crosswordPattern.length;
+    const cols = crosswordPattern[0].length;
+
+    // Populate clues dynamically
+    const cluesAcross = document.getElementById("clues-across");
+    const cluesDown = document.getElementById("clues-down");
+    const cluesUp = document.getElementById("clues-up");
+    const cluesUpSection = document.getElementById("clues-up-section");
+
+    selectedCrossword.clues.across.forEach(clue => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${clue.num}.</strong> ${clue.clue}`;
+      cluesAcross.appendChild(li);
+    });
+
+    selectedCrossword.clues.down.forEach(clue => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${clue.num}.</strong> ${clue.clue}`;
+      cluesDown.appendChild(li);
+    });
+
+    if (selectedCrossword.clues.up.length > 0) {
+      cluesUpSection.style.display = 'block';
+      selectedCrossword.clues.up.forEach(clue => {
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${clue.num}.</strong> ${clue.clue}`;
+        cluesUp.appendChild(li);
+      });
+    }
+  
+    // Build grid
+    for (let r = 0; r < rows; r++) {
+      const row = document.createElement("tr");
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement("td");
+        if (crosswordPattern[r][c] === '#') {
+          cell.classList.add("blank");
+        } else {
+          const input = document.createElement("input");
+          input.maxLength = 1;
+          input.dataset.row = r;
+          input.dataset.col = c;
+          
+          // Auto-advance to next cell
+          input.addEventListener('input', (e) => {
+            if (e.target.value) {
+              const allInputs = Array.from(grid.querySelectorAll('input'));
+              const currentIndex = allInputs.indexOf(e.target);
+              if (currentIndex < allInputs.length - 1) {
+                allInputs[currentIndex + 1].focus();
+              }
+            }
+          });
+
+          // Add clue number if exists
+          const clueNum = clueNumbers.find(cn => cn[0] === r && cn[1] === c);
+          if (clueNum) {
+            const numSpan = document.createElement("span");
+            numSpan.className = "clue-number";
+            numSpan.textContent = clueNum[2];
+            cell.appendChild(numSpan);
+          }
+          
+          // Backspace navigation
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value) {
+              const allInputs = Array.from(grid.querySelectorAll('input'));
+              const currentIndex = allInputs.indexOf(e.target);
+              if (currentIndex > 0) {
+                allInputs[currentIndex - 1].focus();
+              }
+            }
+          });
+          
+          cell.appendChild(input);
+        }
+        row.appendChild(cell);
+      }
+      grid.appendChild(row);
+    }
+  
+    const checkBtn = document.getElementById("check-crossword");
+    const resultContainer = document.getElementById("result-container");
+  
+    checkBtn.addEventListener("click", () => {
+      const inputs = grid.querySelectorAll("input");
+      let correct = 0;
+      let total = 0;
+  
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (crosswordPattern[r][c] !== '#') {
+            total++;
+            const input = grid.rows[r].cells[c].querySelector("input");
+            const val = input.value.toUpperCase();
+            if (val === crosswordPattern[r][c]) {
+              input.style.backgroundColor = "#c8e6c9"; // green
+              correct++;
+            } else {
+              input.style.backgroundColor = "#ffcdd2"; // red
+            }
+          }
+        }
+      }
+  
+      if (correct === total) {
+        // Use the coordinate for this specific crossword
+        const coordinate = selectedCrossword.coordinate;
+        
+        resultContainer.innerHTML = `
+          <div class="result-box success">
+            <div>✅ Congratulations! Crossword Complete!</div>
+            <div style="margin-top: 1rem;">Your Coordinate:</div>
+            <div class="coordinate">${coordinate}</div>
+          </div>
+        `;
+      } else {
+        resultContainer.innerHTML = `
+          <div class="result-box error">
+            ❌ Some answers are incorrect. Try again!
+          </div>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>
